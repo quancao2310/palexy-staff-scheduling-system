@@ -33,3 +33,6 @@ Thumbs.db
 # --- Claude Code / browser-automation local state ---
 .claude/settings.local.json
 .playwright-mcp/
+
+# Brainstorming visual companion scratch files
+.superpowers/
