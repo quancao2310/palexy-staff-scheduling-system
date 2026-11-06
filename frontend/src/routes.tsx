@@ -1,5 +1,6 @@
 import { Navigate, type RouteObject } from 'react-router'
 import App from './App'
+import { DemandTab } from './features/demand/DemandTab'
 import { ScheduleLayout } from './features/schedules/ScheduleLayout'
 import { SchedulesPage } from './features/schedules/SchedulesPage'
 import { ShiftsTab } from './features/shifts/ShiftsTab'
@@ -20,6 +21,7 @@ export const routes: RouteObject[] = [
           { index: true, element: <Navigate to="staff" replace /> },
           { path: 'staff', element: <StaffTab /> },
           { path: 'shifts', element: <ShiftsTab /> },
+          { path: 'demand', element: <DemandTab /> },
         ],
       },
       { path: '*', element: <NotFoundPage /> },
