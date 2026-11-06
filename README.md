@@ -71,7 +71,7 @@ Browser ──► nginx :8080 ──┬─ /           static React bundle (SPA 
 - **Same origin everywhere → no CORS.** nginx proxies `/api` in Docker; Vite's dev proxy does it locally.
 - **Flyway owns the schema** (`backend/src/main/resources/db/migration`); Hibernate only validates it (`ddl-auto: validate`).
 - **Errors are RFC 9457 problem-details** (`application/problem+json`); validation failures include a per-field
-  `errors` map so the UI can show messages next to inputs. (Wired up in `GlobalExceptionHandler`; no feature uses it yet.)
+  `errors` map so the UI can show messages next to inputs (`GlobalExceptionHandler` on the backend, `lib/forms.ts` on the frontend).
 - **Container hardening:** multi-stage builds, pinned base images, non-root users (backend uid 10001, nginx uid 101),
   read-only root filesystem with a `/tmp` tmpfs, all Linux capabilities dropped, `no-new-privileges`, memory limits,
   health-gated startup order (`db` → `backend` → `frontend`), graceful shutdown, layered Spring Boot jar for small rebuilds.
@@ -86,7 +86,7 @@ compose.yaml    db + backend + frontend  (the one command)
 compose.dev.yaml  overlay that publishes Postgres for local development
 ```
 
-Planned convention: organise feature code by domain in both apps. Backend: a package per feature under
+Convention: feature code is organised by domain in both apps. Backend: a package per feature under
 `com.palexy.scheduler` (entity → repository → service → controller, DTOs as records, schema changes as new Flyway
 migrations). Frontend: a `src/features/<name>/` folder with query hooks (`api.ts`, built on `src/lib/api.ts`) and components.
 
@@ -169,8 +169,6 @@ cover it.
   hours are the sum of their assigned shift lengths. Deleting a shift says how many assignments it removes; editing
   a shift's times keeps its assignments and warns if that creates overlaps or over-maximum weeks. No drag and drop.
 - Package name `com.palexy.scheduler`; Java 25 LTS; PostgreSQL pinned to 17 (PG 18 changed the data-directory layout).
-
-_(More will be added as decisions are made.)_
 
 ## AI usage note
 
@@ -317,7 +315,8 @@ Checks and what they found:
   the existing roster tests, updated for the editable grid.
 - The backend compiles, and I exercised the new endpoints by hand against the real database: create (201), duplicate
   (409), bad day or missing field (400), a shift from nowhere (404), delete (204) and a repeated delete (404). I did
-  not write backend tests for them, and I did not re-run the backend suite after the change.
+  not write backend tests for them. I re-ran the whole backend suite afterwards (72 tests, all passing), but none of
+  those tests exercises the two new endpoints.
 - In the browser on the sample schedule, Claude ticked and removed people, used Undo, pushed someone over their
   maximum (red chips and a named warning), checked that an overlapping shift is disabled, read the delete count on
   the Shifts tab and edited a shift into an overlap to see the warning. It caught two mistakes in its own build: the
