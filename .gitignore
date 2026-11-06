@@ -1,0 +1,35 @@
+# --- Brief & raw inputs kept out of the published repo ---
+/*.pdf
+/sample_transaction_interview.csv
+
+# --- Environment / secrets ---
+.env
+.env.*
+!.env.example
+
+# --- Java / Maven ---
+backend/target/
+backend/.mvn/wrapper/maven-wrapper.jar
+*.class
+*.log
+hs_err_pid*
+
+# --- Node / Vite ---
+node_modules/
+frontend/dist/
+frontend/coverage/
+*.tsbuildinfo
+.vite/
+
+# --- IDE / OS ---
+.idea/
+*.iml
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.DS_Store
+Thumbs.db
+
+# --- Claude Code / browser-automation local state ---
+.claude/settings.local.json
+.playwright-mcp/

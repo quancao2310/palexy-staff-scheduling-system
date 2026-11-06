@@ -1,0 +1,22 @@
+# Normalise line endings to LF in the repo. Critical on Windows: a CRLF in mvnw,
+# a Dockerfile or a shell script breaks the Linux container at runtime.
+* text=auto eol=lf
+
+# Be explicit for files that must never be CRLF
+mvnw            text eol=lf
+*.sh            text eol=lf
+Dockerfile*     text eol=lf
+*.yaml          text eol=lf
+*.yml           text eol=lf
+*.conf          text eol=lf
+
+# Windows-only scripts keep CRLF
+*.cmd           text eol=crlf
+*.bat           text eol=crlf
+
+# Binaries
+*.png           binary
+*.jpg           binary
+*.ico           binary
+*.woff2         binary
+*.pdf           binary
