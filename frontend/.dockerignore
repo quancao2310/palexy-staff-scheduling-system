@@ -1,0 +1,13 @@
+# Keep the build context small; the image installs its own dependencies with `npm ci`.
+node_modules
+dist
+coverage
+.git
+.gitignore
+.vscode
+.idea
+*.log
+Dockerfile*
+.dockerignore
+.env
+.env.*
