@@ -1,0 +1,97 @@
+# Staff Scheduler: production-like stack.
+#
+#   docker compose up --build        ->  http://localhost:8080
+#
+# Only the frontend (nginx) is published. nginx serves the SPA and reverse-proxies /api to the
+# backend over the private compose network; the database is not reachable from the host.
+# (For local hot-reload development, add compose.dev.yaml to publish Postgres - see README.)
+#
+# Every value has a working default so no .env file is required; see .env.example to override.
+
+name: staff-scheduler
+
+services:
+  db:
+    image: postgres:17-alpine   # keep in sync with backend/src/test/.../TestcontainersConfiguration
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-scheduler}
+      POSTGRES_USER: ${POSTGRES_USER:-scheduler}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-scheduler}   # dev default; override in .env for anything shared
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      # $$ defers expansion to the container's shell, where these variables are set.
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    security_opt:
+      - no-new-privileges:true
+
+  backend:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-scheduler}
+      DB_USER: ${POSTGRES_USER:-scheduler}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-scheduler}
+    depends_on:
+      db:
+        condition: service_healthy   # Flyway needs a ready database at startup
+    healthcheck:
+      # The Java 25 JRE image ships neither curl nor wget, so probe with bash's built-in /dev/tcp
+      # rather than installing extra tools into the runtime image. Passes only if readiness reports UP.
+      test:
+        - CMD
+        - bash
+        - -c
+        - "exec 3<>/dev/tcp/127.0.0.1/8080 && printf 'GET /actuator/health/readiness HTTP/1.0\\r\\n\\r\\n' >&3 && grep -q '\"status\":\"UP\"' <&3"
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 40s              # JVM + Flyway warm-up
+    stop_grace_period: 30s           # > spring.lifecycle.timeout-per-shutdown-phase (20s)
+    # Hardening: immutable filesystem (only /tmp is writable), no extra privileges or capabilities.
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          memory: 768M               # the JVM sizes its heap from this (-XX:MaxRAMPercentage=75)
+
+  frontend:
+    build:
+      context: ./frontend
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8080/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    read_only: true
+    tmpfs:
+      - /tmp                         # nginx pid file and temp dirs live here in the unprivileged image
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+
+volumes:
+  pgdata:

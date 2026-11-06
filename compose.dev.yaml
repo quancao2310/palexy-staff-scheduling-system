@@ -1,0 +1,13 @@
+# Development overlay: publishes Postgres on localhost so the backend and frontend can run
+# natively with hot reload while only the database runs in Docker.
+#
+#   docker compose -f compose.yaml -f compose.dev.yaml up -d db
+#   cd backend  && ./mvnw spring-boot:run      # http://localhost:8080
+#   cd frontend && npm run dev                 # http://localhost:5173 (proxies /api to :8080)
+#
+# Bound to 127.0.0.1 so the database is never exposed to the network.
+
+services:
+  db:
+    ports:
+      - "127.0.0.1:${DB_PORT:-5432}:5432"
