@@ -35,6 +35,7 @@ function stepsOf(schedule: Schedule): Step[] {
     { to: 'shifts', label: 'Shifts', count: schedule.shiftCount, done: schedule.shiftCount > 0 },
     { to: 'demand', label: 'Demand data', done: schedule.hasTransactions },
     { to: 'roster', label: 'Roster' },
+    { to: 'summary', label: 'Summary' },
   ]
 }
 
@@ -93,7 +94,7 @@ export function ScheduleLayout() {
         </div>
       </div>
 
-      <nav aria-label="Schedule setup" className="-mx-4 overflow-x-auto px-4">
+      <nav aria-label="Schedule sections" className="-mx-4 overflow-x-auto px-4">
         <ul className="flex min-w-max gap-1 border-b">
           {steps.map((step) => (
             <li key={step.to}>

@@ -6,6 +6,7 @@ import { ScheduleLayout } from './features/schedules/ScheduleLayout'
 import { SchedulesPage } from './features/schedules/SchedulesPage'
 import { ShiftsTab } from './features/shifts/ShiftsTab'
 import { StaffTab } from './features/staff/StaffTab'
+import { SummaryTab } from './features/summary/SummaryTab'
 import { NotFoundPage } from './pages/NotFoundPage'
 
 /** Route table, kept separate from the router instance so tests can mount it in a memory router. */
@@ -24,6 +25,7 @@ export const routes: RouteObject[] = [
           { path: 'shifts', element: <ShiftsTab /> },
           { path: 'demand', element: <DemandTab /> },
           { path: 'roster', element: <RosterTab /> },
+          { path: 'summary', element: <SummaryTab /> },
         ],
       },
       { path: '*', element: <NotFoundPage /> },
