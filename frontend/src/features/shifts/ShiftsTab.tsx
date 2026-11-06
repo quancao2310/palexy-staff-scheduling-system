@@ -1,11 +1,16 @@
 import { Clock, Pencil, Plus, Trash2 } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useAssignments, type Assignment } from '@/features/roster/api'
+import { countShiftConflicts } from '@/features/roster/problems'
+import { scheduleKeys } from '@/features/schedules/api'
 import { useScheduleId } from '@/features/schedules/useScheduleId'
+import { useStaff, type StaffMember } from '@/features/staff/api'
 import { showError } from '@/lib/forms'
 import { formatShift, pluralize } from '@/lib/time'
 import { useAddShift, useRemoveShift, useShifts, useUpdateShift, type Shift } from './api'
@@ -19,9 +24,32 @@ export function ShiftsTab() {
   const add = useAddShift(scheduleId)
   const update = useUpdateShift(scheduleId)
   const remove = useRemoveShift(scheduleId)
+  const queryClient = useQueryClient()
+  const assignments = useAssignments(scheduleId)
+  useStaff(scheduleId) // cached so the conflict check after an edit has the team to hand
   const [adding, setAdding] = useState(false)
   const [editing, setEditing] = useState<Shift | null>(null)
   const [removing, setRemoving] = useState<Shift | null>(null)
+
+  /** Editing times never touches the roster, so say if the new times made someone's week clash. */
+  function reportUpdate() {
+    const conflicts = countShiftConflicts(
+      queryClient.getQueryData<Assignment[]>(scheduleKeys.assignments(scheduleId)) ?? [],
+      queryClient.getQueryData<Shift[]>(scheduleKeys.shifts(scheduleId)) ?? [],
+      queryClient.getQueryData<StaffMember[]>(scheduleKeys.staff(scheduleId)) ?? [],
+    )
+    const notes = [
+      conflicts.overlapping > 0 &&
+        `${pluralize(conflicts.overlapping, 'person', 'people')} ${conflicts.overlapping === 1 ? 'is' : 'are'} on overlapping shifts`,
+      conflicts.overMax > 0 && `${pluralize(conflicts.overMax, 'person', 'people')} over their maximum hours`,
+    ].filter((note): note is string => note !== false)
+    if (notes.length === 0) toast.success('Shift updated')
+    else toast.warning(`Shift updated. ${notes.join(', ')}. See the Roster tab.`)
+  }
+
+  const assignmentsOnRemoving = removing
+    ? (assignments.data ?? []).filter((a) => a.shiftId === removing.id).length
+    : 0
 
   return (
     <div className="grid gap-6">
@@ -142,7 +170,7 @@ export function ShiftsTab() {
         onSubmit={async (values) => {
           if (!editing) return
           await update.mutateAsync({ id: editing.id, ...values })
-          toast.success('Shift updated')
+          reportUpdate()
           setEditing(null)
         }}
       />
@@ -152,7 +180,13 @@ export function ShiftsTab() {
         title={
           removing ? `Delete shift ${formatShift(removing.startHour, removing.endHour)}?` : 'Delete shift?'
         }
-        description="Anyone assigned to this shift will be unassigned from it."
+        description={
+          assignments.data === undefined
+            ? 'Anyone assigned to this shift will be unassigned from it.'
+            : assignmentsOnRemoving === 0
+              ? 'Nobody is assigned to this shift.'
+              : `${pluralize(assignmentsOnRemoving, 'assignment')} across the week will be removed.`
+        }
         confirmLabel="Delete shift"
         onConfirm={() => {
           if (!removing) return
