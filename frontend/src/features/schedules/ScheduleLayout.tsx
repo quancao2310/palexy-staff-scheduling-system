@@ -25,7 +25,8 @@ interface Step {
   to: string
   label: string
   count?: number
-  done: boolean
+  /** Setup steps show a done / not-done icon; views like the summary have none. */
+  done?: boolean
 }
 
 function stepsOf(schedule: Schedule): Step[] {
@@ -33,6 +34,7 @@ function stepsOf(schedule: Schedule): Step[] {
     { to: 'staff', label: 'Staff', count: schedule.staffCount, done: schedule.staffCount > 0 },
     { to: 'shifts', label: 'Shifts', count: schedule.shiftCount, done: schedule.shiftCount > 0 },
     { to: 'demand', label: 'Demand data', done: schedule.hasTransactions },
+    { to: 'roster', label: 'Roster' },
   ]
 }
 
@@ -67,7 +69,7 @@ export function ScheduleLayout() {
   }
 
   const steps = stepsOf(schedule)
-  const missing = steps.filter((step) => !step.done).map((step) => step.label.toLowerCase())
+  const missing = steps.filter((step) => step.done === false).map((step) => step.label.toLowerCase())
 
   return (
     <div className="grid gap-6">
@@ -106,11 +108,8 @@ export function ScheduleLayout() {
                   )
                 }
               >
-                {step.done ? (
-                  <CircleCheck className="size-4 text-primary" aria-label="Done" />
-                ) : (
-                  <CircleDashed className="size-4" aria-label="Not done yet" />
-                )}
+                {step.done === true && <CircleCheck className="size-4 text-primary" aria-label="Done" />}
+                {step.done === false && <CircleDashed className="size-4" aria-label="Not done yet" />}
                 {step.label}
                 {step.count !== undefined && (
                   <span className="rounded-full bg-muted px-1.5 text-xs tabular-nums">{step.count}</span>

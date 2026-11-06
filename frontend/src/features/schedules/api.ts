@@ -23,6 +23,7 @@ export const scheduleKeys = {
   staff: (id: number) => ['schedules', id, 'staff'] as const,
   shifts: (id: number) => ['schedules', id, 'shifts'] as const,
   transactions: (id: number) => ['schedules', id, 'transactions'] as const,
+  assignments: (id: number) => ['schedules', id, 'assignments'] as const,
 }
 
 export function refreshSummary(queryClient: QueryClient, id: number) {
