@@ -1,5 +1,6 @@
 package com.palexy.scheduler.common.error;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -15,11 +16,6 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/**
- * Single place that turns exceptions into RFC 9457 problem-detail responses
- * ({@code application/problem+json}). Extending {@link ResponseEntityExceptionHandler}
- * gives the same format for all standard Spring MVC errors (bad JSON, wrong method, ...).
- */
 @RestControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
@@ -28,7 +24,19 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
-    /** Adds a per-field {@code errors} map so the UI can show messages next to inputs. */
+    @ExceptionHandler(FieldProblemException.class)
+    ProblemDetail handleFieldProblem(FieldProblemException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(ex.status(), ex.getMessage());
+        problem.setProperty("errors", Map.of(ex.field(), ex.getMessage()));
+        return problem;
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    ProblemDetail handleIntegrityViolation(DataIntegrityViolationException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT,
+                "That change conflicts with existing data. Refresh and try again.");
+    }
+
     @Override
     protected ResponseEntity<Object> handleMethodArgumentNotValid(
             MethodArgumentNotValidException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
