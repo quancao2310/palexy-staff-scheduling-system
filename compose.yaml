@@ -38,6 +38,7 @@ services:
       DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-scheduler}
       DB_USER: ${POSTGRES_USER:-scheduler}
       DB_PASSWORD: ${POSTGRES_PASSWORD:-scheduler}
+      DEMO_DATA: ${DEMO_DATA:-true}
     depends_on:
       db:
         condition: service_healthy   # Flyway needs a ready database at startup

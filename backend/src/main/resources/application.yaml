@@ -34,6 +34,10 @@ server:
   # backend is not published; only nginx can reach it.
   forward-headers-strategy: framework
 
+app:
+  demo-data:
+    enabled: ${DEMO_DATA:true}
+
 management:
   endpoints:
     web:
