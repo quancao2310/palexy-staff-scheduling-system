@@ -1,0 +1,41 @@
+spring:
+  application:
+    name: scheduler
+
+  # Connection settings come from the environment (compose.yaml sets them).
+  # The defaults match `compose.dev.yaml`, which publishes Postgres on localhost:5432.
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/scheduler}
+    username: ${DB_USER:scheduler}
+    password: ${DB_PASSWORD:scheduler}
+
+  jpa:
+    open-in-view: false          # no lazy loading in the web layer; keep transactions in services
+    hibernate:
+      ddl-auto: validate         # Flyway owns the schema; Hibernate only checks it matches
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+
+  lifecycle:
+    timeout-per-shutdown-phase: 20s   # let in-flight requests finish on SIGTERM (docker stop)
+
+server:
+  port: 8080
+  shutdown: graceful
+  # The app sits behind nginx, which sets X-Forwarded-Host/Proto. Honour them so generated URLs
+  # (e.g. the Location header on 201 responses) match what the browser used. Safe because the
+  # backend is not published; only nginx can reach it.
+  forward-headers-strategy: framework
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info     # nothing else is exposed
+  endpoint:
+    health:
+      probes:
+        enabled: true            # /actuator/health/liveness and /actuator/health/readiness
+      show-details: never
