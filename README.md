@@ -2,9 +2,9 @@
 
 A web app that helps a store manager plan one typical week of staff schedules from historical hourly demand.
 
-> **Status:** schedules, staff, shifts, transaction (demand) upload and the auto-scheduler are implemented end to
-> end (UI, API, database). Roster editing with live warnings (brief sections 2.6-2.7) is next; see the
-> [Roadmap](#roadmap).
+> **Status:** schedules, staff, shifts, transaction (demand) upload, the auto-scheduler, the aggregated summary and
+> direct roster editing with live warnings are implemented end to end (UI, API, database); see the
+> [Roadmap](#roadmap) for what is left.
 
 ## Stack
 
@@ -102,6 +102,8 @@ All under `/api`; errors are RFC 9457 problem-details (field errors in `errors`,
 | `GET/PUT/DELETE /schedules/{id}/transactions` | read, upload (multipart `file`, replaces), clear demand data |
 | `POST /schedules/{id}/auto-schedule` | draft the roster (replaces the current one); returns `assignments`, `warnings`, `stats`. 422 when staff, shifts or demand data are missing |
 | `GET /schedules/{id}/assignments` | the current roster: `[{id, day, shiftId, staffId}]`, day 1 = Monday |
+| `POST /schedules/{id}/assignments` | put one person on a shift on a day: body `{day, shiftId, staffId}`; 201. 404 if the shift or person is not in the schedule, 409 if already there, 400 for a bad day |
+| `DELETE /schedules/{id}/assignments/{assignmentId}` | take one person off a shift; 204 (404 if not in the schedule) |
 
 ## Auto-scheduler approach
 
@@ -159,6 +161,13 @@ cover it.
 - A person may work several non-overlapping shifts in a day (split or back-to-back), never overlapping ones; days over
   10 hours cost a little in the score. Auto-schedule overwrites the whole roster (the UI asks first). Its warnings are
   returned with the result and not stored.
+- Roster editing (brief 2.7): click a cell on the Roster tab and tick or untick people; every change is saved at
+  once (no Save button) and the grid, the warnings strip and the Summary tab follow. Going over a person's maximum
+  hours or leaving an hour short is allowed and flagged with the reason, never blocked. One person on two overlapping
+  shifts the same day is prevented in the picker (with the reason shown), since it is impossible. The server only
+  checks that the shift and person belong to the schedule and that the pair is not already there. A person's weekly
+  hours are the sum of their assigned shift lengths. Deleting a shift says how many assignments it removes; editing
+  a shift's times keeps its assignments and warns if that creates overlaps or over-maximum weeks. No drag and drop.
 - Package name `com.palexy.scheduler`; Java 25 LTS; PostgreSQL pinned to 17 (PG 18 changed the data-directory layout).
 
 _(More will be added as decisions are made.)_
@@ -175,5 +184,5 @@ suggestions were overridden.
 3. ~~Shifts CRUD (seeded with 07:00-15:00 and 15:00-23:00)~~ done
 4. ~~Transaction CSV import~~ done
 5. ~~Auto-scheduler + demand model~~ done
-6. Roster view with direct editing, live aggregated summary and warnings (over max hours, understaffed hours)
+6. ~~Roster view with direct editing, live aggregated summary and warnings (over max hours, understaffed hours)~~ done
 7. Stretch: coverage view, availability/days off, roles, export
