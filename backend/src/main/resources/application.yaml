@@ -35,6 +35,10 @@ server:
   forward-headers-strategy: framework
 
 app:
+  scheduler:
+    # N: transactions one person handles per hour. 16 = NACS State of the Industry Report (2024 data),
+    # the average convenience store. It defines how many people an hour "needs".
+    transactions-per-staff-hour: 16
   demo-data:
     enabled: ${DEMO_DATA:true}
 

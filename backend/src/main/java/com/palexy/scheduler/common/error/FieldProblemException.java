@@ -21,6 +21,11 @@ public class FieldProblemException extends RuntimeException {
         return new FieldProblemException(HttpStatus.BAD_REQUEST, field, message);
     }
 
+    /** The request is fine but the schedule is not ready for it (422), e.g. nothing to schedule yet. */
+    public static FieldProblemException unprocessable(String field, String message) {
+        return new FieldProblemException(HttpStatus.valueOf(422), field, message);
+    }
+
     public HttpStatus status() {
         return status;
     }
