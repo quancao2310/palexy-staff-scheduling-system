@@ -1,0 +1,14 @@
+# Keep the build context small and cache-friendly: only pom.xml, the wrapper and src/ are needed.
+target/
+.git
+.gitignore
+.gitattributes
+.idea/
+.vscode/
+*.iml
+*.log
+Dockerfile*
+.dockerignore
+HELP.md
+**/.env
+**/.env.*
