@@ -18,6 +18,11 @@ spring:
         jdbc:
           time_zone: UTC
 
+  servlet:
+    multipart:
+      max-file-size: 512KB
+      max-request-size: 600KB
+
   lifecycle:
     timeout-per-shutdown-phase: 20s   # let in-flight requests finish on SIGTERM (docker stop)
 

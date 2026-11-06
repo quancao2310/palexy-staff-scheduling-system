@@ -1,5 +1,6 @@
 package com.palexy.scheduler.common.error;
 
+import com.palexy.scheduler.transactions.ReportFormatException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -35,6 +36,13 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     ProblemDetail handleIntegrityViolation(DataIntegrityViolationException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT,
                 "That change conflicts with existing data. Refresh and try again.");
+    }
+
+    @ExceptionHandler(ReportFormatException.class)
+    ProblemDetail handleBadReport(ReportFormatException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        problem.setProperty("problems", ex.problems());
+        return problem;
     }
 
     @Override
