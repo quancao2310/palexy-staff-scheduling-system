@@ -22,6 +22,15 @@ const shifts = [
   { id: 1, startHour: 7, endHour: 15 },
   { id: 2, startHour: 15, endHour: 23 },
 ]
+const demand = {
+  hasData: true,
+  fileName: 'week.csv',
+  uploadedAt: null,
+  cells: [],
+  total: 0,
+  peak: null,
+  warnings: [],
+}
 const drafted = {
   assignments: [
     { id: 10, day: 1, shiftId: 1, staffId: 1 },
@@ -54,7 +63,9 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-function stubRoster(options: { existing?: typeof drafted.assignments; schedule?: object; postStatus?: number } = {}) {
+function stubRoster(
+  options: { existing?: typeof drafted.assignments; schedule?: object; postStatus?: number } = {},
+) {
   return stubApi(({ method, url }) => {
     if (method === 'POST' && url.endsWith('/auto-schedule')) {
       return options.postStatus
@@ -65,6 +76,7 @@ function stubRoster(options: { existing?: typeof drafted.assignments; schedule?:
         : { body: drafted }
     }
     if (url.endsWith('/assignments')) return { body: options.existing ?? [] }
+    if (url.endsWith('/transactions')) return { body: demand }
     if (url.endsWith('/staff')) return { body: staff }
     if (url.endsWith('/shifts')) return { body: shifts }
     return { body: options.schedule ?? schedule }
@@ -94,6 +106,7 @@ describe('auto-scheduling', () => {
   it('cannot replace a roster it has not loaded yet', async () => {
     stubApi(({ method, url }) => {
       if (method === 'GET' && url.endsWith('/assignments')) return { status: 500, body: { detail: 'down' } }
+      if (url.endsWith('/transactions')) return { body: demand }
       if (url.endsWith('/staff')) return { body: staff }
       if (url.endsWith('/shifts')) return { body: shifts }
       return { body: schedule }
@@ -123,6 +136,7 @@ describe('auto-scheduling', () => {
     stubApi(({ method, url }) => {
       if (method === 'POST' && url.endsWith('/auto-schedule')) return { body: nobody }
       if (url.endsWith('/assignments')) return { body: [] }
+      if (url.endsWith('/transactions')) return { body: demand }
       if (url.endsWith('/staff')) return { body: staff }
       if (url.endsWith('/shifts')) return { body: shifts }
       return { body: schedule }
@@ -156,7 +170,9 @@ describe('auto-scheduling', () => {
 
     const table = await screen.findByRole('table', { name: 'Weekly roster' })
     expect(within(within(table).getByRole('row', { name: /07:00/ })).getByText('Anna')).toBeInTheDocument()
-    expect(within(within(table).getByRole('row', { name: /15:00 – 23:00/ })).getByText('Ben')).toBeInTheDocument()
+    expect(
+      within(within(table).getByRole('row', { name: /15:00 – 23:00/ })).getByText('Ben'),
+    ).toBeInTheDocument()
     expect(screen.getByText('Friday 13:00 needs 4 people, has 2')).toBeInTheDocument()
     expect(posts(fetchMock)).toHaveLength(1)
   })
@@ -183,8 +199,10 @@ describe('auto-scheduling', () => {
 
     await user.click(await enabledStartButton())
 
-    expect(await screen.findByText('Add at least one staff member before auto-scheduling')).toBeInTheDocument()
-    expect(screen.getByText('No roster yet')).toBeInTheDocument()
+    expect(
+      await screen.findByText('Add at least one staff member before auto-scheduling'),
+    ).toBeInTheDocument()
+    expect(screen.getByText(/no roster yet/i)).toBeInTheDocument()
     expect(posts(fetchMock)).toHaveLength(1)
   })
 
